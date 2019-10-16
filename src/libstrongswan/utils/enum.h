@@ -65,6 +65,8 @@ struct enum_name_t {
 	int last;
 	/** next enum_name_t in list, or ENUM_FLAG_MAGIC */
 	enum_name_t *next;
+	/** number of names */
+	u_int count;
 	/** array of strings containing names from first to last */
 	char *names[];
 };
@@ -77,7 +79,9 @@ struct enum_name_t {
  * @param last	enum value of the last enum string
  * @param ...	a list of strings
  */
-#define ENUM_BEGIN(name, first, last, ...) static enum_name_t name##last = {first, last, NULL, { __VA_ARGS__ }}
+#define ENUM_BEGIN(name, first, last, ...) \
+	static enum_name_t name##last = {first, last, NULL, \
+		countof(((char*[]){__VA_ARGS__})), { __VA_ARGS__ }}
 
 /**
  * Continue a enum name list startetd with ENUM_BEGIN.
@@ -88,7 +92,9 @@ struct enum_name_t {
  * @param prev	enum value of the "last" defined in ENUM_BEGIN/previous ENUM_NEXT
  * @param ...	a list of strings
  */
-#define ENUM_NEXT(name, first, last, prev, ...) static enum_name_t name##last = {first, last, &name##prev, { __VA_ARGS__ }}
+#define ENUM_NEXT(name, first, last, prev, ...) \
+	static enum_name_t name##last = {first, last, &name##prev, \
+		countof(((char*[]){__VA_ARGS__})), { __VA_ARGS__ }}
 
 /**
  * Complete enum name list started with ENUM_BEGIN.
@@ -109,7 +115,8 @@ struct enum_name_t {
  * @param last	enum value of the last enum string
  * @param ...	a list of strings
  */
-#define ENUM(name, first, last, ...) ENUM_BEGIN(name, first, last, __VA_ARGS__); ENUM_END(name, last)
+#define ENUM(name, first, last, ...) \
+	ENUM_BEGIN(name, first, last, __VA_ARGS__); ENUM_END(name, last)
 
 /**
  * Define a enum name with only one range for flags.
@@ -125,7 +132,8 @@ struct enum_name_t {
  * @param ...	a list of strings
  */
 #define ENUM_FLAGS(name, first, last, ...) \
-	static enum_name_t name##last = {first, last, ENUM_FLAG_MAGIC, { __VA_ARGS__ }}; \
+	static enum_name_t name##last = {first, last, ENUM_FLAG_MAGIC, \
+		countof(((char*[]){__VA_ARGS__})), { __VA_ARGS__ }}; \
 	ENUM_END(name, last)
 
 /**

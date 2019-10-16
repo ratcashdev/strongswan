@@ -34,6 +34,10 @@ char *enum_to_name(enum_name_t *e, int val)
 	{
 		if (val >= e->first && val <= e->last)
 		{
+			if (val - e->first >= e->count)
+			{
+				return NULL;
+			}
 			return e->names[val - e->first];
 		}
 	}
@@ -107,10 +111,15 @@ char *enum_flags_to_string(enum_name_t *e, u_int val, char *buf, size_t len)
 		if (val & flag)
 		{
 			char *name = NULL, hex[32];
+			int p = -1;
 
 			if (flag >= (u_int)e->first && flag <= (u_int)e->last)
 			{
-				name = e->names[find_flag_pos(e->first, i)];
+				p = find_flag_pos(e->first, i);
+			}
+			if (p >= 0 && p < e->count)
+			{
+				name = e->names[p];
 			}
 			else
 			{

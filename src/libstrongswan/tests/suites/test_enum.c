@@ -28,12 +28,13 @@ enum {
 	CONT5,
 } test_enum_cont;
 
-/* can't be static */
-enum_name_t *test_enum_cont_names;
-
 ENUM_BEGIN(test_enum_cont_names, CONT1, CONT5,
 	"CONT1", "CONT2", "CONT3", "CONT4", "CONT5");
 ENUM_END(test_enum_cont_names, CONT5);
+
+ENUM_BEGIN(test_enum_cont_names_missing, CONT1, CONT5,
+	"CONT1", "CONT2", "CONT3");
+ENUM_END(test_enum_cont_names_missing, CONT5);
 
 /*******************************************************************************
  * split enum
@@ -46,9 +47,6 @@ enum {
 	SPLIT5 = 255,
 } test_enum_split;
 
-/* can't be static */
-enum_name_t *test_enum_split_names;
-
 ENUM_BEGIN(test_enum_split_names, SPLIT1, SPLIT2,
 	"SPLIT1", "SPLIT2");
 ENUM_NEXT(test_enum_split_names, SPLIT3, SPLIT4, SPLIT2,
@@ -56,6 +54,13 @@ ENUM_NEXT(test_enum_split_names, SPLIT3, SPLIT4, SPLIT2,
 ENUM_NEXT(test_enum_split_names, SPLIT5, SPLIT5, SPLIT4,
 	"SPLIT5");
 ENUM_END(test_enum_split_names, SPLIT5);
+
+ENUM_BEGIN(test_enum_split_names_missing, SPLIT1, SPLIT2,
+	"SPLIT1");
+ENUM_NEXT(test_enum_split_names_missing, SPLIT3, SPLIT4, SPLIT2,
+	"SPLIT3");
+ENUM_NEXT(test_enum_split_names_missing, SPLIT5, SPLIT5, SPLIT4);
+ENUM_END(test_enum_split_names_missing, SPLIT5);
 
 /*******************************************************************************
  * enum flags
@@ -90,6 +95,9 @@ ENUM_FLAGS(test_enum_flags_overflow_names, FLAG1, FLAG12,
 	"OVERFLOWFLAGLONGNAME7",  "OVERFLOWFLAGLONGNAME8",  "OVERFLOWFLAGLONGNAME9",
 	"OVERFLOWFLAGLONGNAME10", "OVERFLOWFLAGLONGNAME11", "OVERFLOWFLAGLONGNAME12");
 
+ENUM_FLAGS(test_enum_flags_names_missing, FLAG1, FLAG5,
+	"FLAG1", "FLAG2", "FLAG3");
+
 /*******************************************************************************
  * enum_to_name
  */
@@ -105,6 +113,14 @@ static struct {
 	{CONT4, "CONT4"},
 	{CONT5, "CONT5"},
 	{5, NULL},
+}, name_tests_cont_missing[] = {
+	{-1, NULL},
+	{CONT1, "CONT1"},
+	{CONT2, "CONT2"},
+	{CONT3, "CONT3"},
+	{CONT4, NULL},
+	{CONT5, NULL},
+	{5, NULL},
 }, name_tests_split[] = {
 	{-1, NULL},
 	{0, NULL},
@@ -117,6 +133,19 @@ static struct {
 	{7, NULL},
 	{254, NULL},
 	{SPLIT5, "SPLIT5"},
+	{256, NULL},
+}, name_tests_split_missing[] = {
+	{-1, NULL},
+	{0, NULL},
+	{SPLIT1, "SPLIT1"},
+	{SPLIT2, NULL},
+	{3, NULL},
+	{4, NULL},
+	{SPLIT3, "SPLIT3"},
+	{SPLIT4, NULL},
+	{7, NULL},
+	{254, NULL},
+	{SPLIT5, NULL},
 	{256, NULL},
 };
 
@@ -144,6 +173,36 @@ START_TEST(test_enum_to_name_split)
 	else
 	{
 		ck_assert(str == name_tests_split[_i].str);
+	}
+}
+END_TEST
+
+START_TEST(test_enum_to_name_cont_missing)
+{
+	char *str = enum_to_name(test_enum_cont_names_missing,
+							 name_tests_cont_missing[_i].val);
+	if (str)
+	{
+		ck_assert_str_eq(str, name_tests_cont_missing[_i].str);
+	}
+	else
+	{
+		ck_assert(str == name_tests_cont_missing[_i].str);
+	}
+}
+END_TEST
+
+START_TEST(test_enum_to_name_split_missing)
+{
+	char *str = enum_to_name(test_enum_split_names_missing,
+							 name_tests_split_missing[_i].val);
+	if (str)
+	{
+		ck_assert_str_eq(str, name_tests_split_missing[_i].str);
+	}
+	else
+	{
+		ck_assert(str == name_tests_split_missing[_i].str);
 	}
 }
 END_TEST
@@ -269,6 +328,12 @@ static struct {
 }, enum_flags_to_string_tests[] = {
 	{-1, NULL},
 	{6435, NULL},
+}, enum_flags_to_string_tests_missing[] = {
+	{FLAG3, "FLAG3"},
+	{FLAG4, "(0x8)"},
+	{FLAG5, "(0x10)"},
+	{FLAG1 | FLAG4, "FLAG1 | (0x8)"},
+	{FLAG4 | FLAG5, "(0x8) | (0x10)"},
 };
 
 START_TEST(test_enum_printf_hook_cont)
@@ -377,6 +442,23 @@ START_TEST(test_enum_flags_to_string_noflagenum)
 }
 END_TEST
 
+START_TEST(test_enum_flags_to_string_missing)
+{
+	char buf[1024], *str;
+
+	str = enum_flags_to_string(test_enum_flags_names_missing,
+			enum_flags_to_string_tests_missing[_i].val, buf, sizeof(buf));
+	if (str)
+	{
+		ck_assert_str_eq(enum_flags_to_string_tests_missing[_i].str, str);
+	}
+	else
+	{
+		ck_assert(str == enum_flags_to_string_tests_missing[_i].str);
+	}
+}
+END_TEST
+
 START_TEST(test_enum_printf_hook_width)
 {
 	char buf[128];
@@ -400,6 +482,8 @@ Suite *enum_suite_create()
 	tc = tcase_create("enum_to_name");
 	tcase_add_loop_test(tc, test_enum_to_name_cont, 0, countof(name_tests_cont));
 	tcase_add_loop_test(tc, test_enum_to_name_split, 0, countof(name_tests_split));
+	tcase_add_loop_test(tc, test_enum_to_name_cont_missing, 0, countof(name_tests_cont_missing));
+	tcase_add_loop_test(tc, test_enum_to_name_split_missing, 0, countof(name_tests_split_missing));
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("enum_from_name");
@@ -410,6 +494,7 @@ Suite *enum_suite_create()
 	tc = tcase_create("enum_flags_to_string");
 	tcase_add_loop_test(tc, test_enum_flags_to_string, 0, countof(enum_flags_to_string_tests));
 	tcase_add_loop_test(tc, test_enum_flags_to_string_noflagenum, 0, countof(printf_tests_flags_noflagenum));
+	tcase_add_loop_test(tc, test_enum_flags_to_string_missing, 0, countof(enum_flags_to_string_tests_missing));
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("enum_printf_hook");
